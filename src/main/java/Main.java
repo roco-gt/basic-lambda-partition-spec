@@ -26,11 +26,11 @@ public class Main {
 
         // USING ERROR SO WE CAN TRACE BETTER
 
-        tuple2.stream().map(s-> "INITIAL ORDER"+s.a.toString()+"/"+s.b.toString()).forEach(LOGGER::error);
+        tuple2.stream().map(s-> "INITIAL ORDER "+s.a.toString()+"/"+s.b.toString()).forEach(LOGGER::error);
 
         Collections.sort(tuple2, Collections.reverseOrder());
 
-        tuple2.stream().map(s-> "REVERSE ORDER APPLIED"+s.a.toString()+"/"+s.b.toString()).forEach(LOGGER::error);
+        tuple2.stream().map(s-> "REVERSE ORDER APPLIED "+s.a.toString()+"/"+s.b.toString()).forEach(LOGGER::error);
 
 
     }

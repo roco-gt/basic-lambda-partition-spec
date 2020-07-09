@@ -3,10 +3,10 @@ import java.util.Comparator;
 
 public class Tuple<A, B> implements Serializable, Comparable {
 
-    public final Object a;
-    public final Object b;
+    public final Comparable a;
+    public final Comparable b;
 
-    public Tuple(A a, B b) {
+    public Tuple(Comparable a, Comparable b) {
         this.a = a;
         this.b = b;
     }
@@ -29,11 +29,15 @@ public class Tuple<A, B> implements Serializable, Comparable {
     }
 
     @Override
+    /**
+     * Made for string comparison, focused on
+     */
     public int compareTo(Object o) {
-        int res = this.a.toString().compareTo( ((Tuple<?,?>) o).a.toString());
+        Comparable comparable = (Comparable) o;
+        int res = this.a.compareTo( ((Tuple<?,?>) o).a);
 
         if(res==0){
-            return this.b.toString().compareTo( ((Tuple<?,?>) o).b.toString());
+            return this.b.compareTo( ((Tuple<?,?>) o).b);
         }
 
         return res;

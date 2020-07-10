@@ -1,5 +1,6 @@
 partition
-partition_spec1=123131/partition_spec2=123132141241
-partition_spec1=31321/partition_spec2=131231231
-partition_spec1=31321/partition_spec2=123131321
-partition_spec1=123131/partition_spec2=231313121
+partition_spec1=123131/partition_spec2=123132141241/partition_spec3=3132141241
+partition_spec1=31321/partition_spec2=131231231/partition_spec3=313214124
+partition_spec1=31321/partition_spec2=123131321/partition_spec3=3132341241
+partition_spec1=123131/partition_spec2=123132141241/partition_spec3=313211241
+partition_spec1=123131/partition_spec2=123132141/partition_spec3=3132141241

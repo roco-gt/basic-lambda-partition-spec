@@ -5,6 +5,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 
+import java.math.BigInteger;
 import java.util.*;
 
 public class Main {
@@ -23,6 +24,13 @@ public class Main {
     }
 
     /**
+     * NOTES:
+     * WE ARE USING LINKEDHASHMAP SO IT MAINTAINS THE INSERTION ORDER
+     * THIS WILL BE IMPORTANT FOR THE COMPARATOR AS THE COMPARATOR IS
+     * GONNA READ AL THE PARTITIONS SPEC ON A ORDERED WAY.
+     */
+
+    /**
      * So what this method does is collecting the list and
      * converting it to arraylist because what you need is something
      * comparable to be able to do a reverse order over the partitions
@@ -30,11 +38,11 @@ public class Main {
      * @param ds
      * @return all the partitions spec without order
      */
-    private static ArrayList<TreeMap<String, String>> getPartitionSpecUnordered(Dataset ds) {
+    private static ArrayList<LinkedHashMap<String, String>> getPartitionSpecUnordered(Dataset ds) {
 
         return new ArrayList(ds.javaRDD().map(o ->
         {
-            TreeMap map = new TreeMap<String, String>();
+            LinkedHashMap map = new LinkedHashMap<String, String>();
             // We then procceed to split every partition to add it to the list of partitions
             Arrays.stream(((Row) o).getString(0).split("/")).forEach(s -> {
                 String[] split = s.split("=");
@@ -52,15 +60,15 @@ public class Main {
      * @param ds
      * @return ordered partition spec list
      */
-    private static ArrayList<TreeMap<String, String>> getPartitionSpecOrdered(Dataset ds) {
+    private static ArrayList<LinkedHashMap<String, String>> getPartitionSpecOrdered(Dataset ds) {
 
-        ArrayList<TreeMap<String, String>> tuple = getPartitionSpecUnordered(ds);
+        ArrayList<LinkedHashMap<String, String>> tuple = getPartitionSpecUnordered(ds);
 
         // USING ERROR SO WE CAN TRACE BETTER (IT HAS ANOTHER COLOR,
         // COULD BE DONE BY ENABLING TRACE AND CHANGING COLORS)
 
         // Printing the unordered list
-        for (TreeMap<String, String> tuples : tuple) {
+        for (LinkedHashMap<String, String> tuples : tuple) {
             LOGGER.error("This is the list: "+tuples.toString());
             tuples.keySet().forEach(z -> LOGGER.error("INITIAL ORDER APPLIED TO A " + z.toString() + "/"
                     + "INITIAL ORDER APPLIED TO B "+ tuples.get(z).toString()));
@@ -70,13 +78,53 @@ public class Main {
 
         // Reverse ordering the list, this is why it should be an ArrayList,
         // so it is comparable and not to have any cast problem
-        Collections.reverse(tuple);
 
-        // TODO: REVISE WHY THE REVERSE ORDER IS JUMPING WRONGLY ON
-        // THE SECOND OPERATOR
+        // We create our own comparator for the List<Maps>
+        // as we want every key value from every "Register" (list element)
+        // to be compared between.
+
+        Collections.sort(tuple,(stringStringLinkedHashMap, t1) ->
+        {
+            LOGGER.error("We are comparing "+ stringStringLinkedHashMap.toString()
+                    +" to "+t1.toString());
+            for (String keySet: stringStringLinkedHashMap.keySet())
+            {
+                if(!t1.containsKey(keySet))
+                    throw new RuntimeException("Something is wrong with the map");
+                else {
+                    // We try to convert it to BigInteger, because it should be our primary
+                    // way when we can as Strings are compared lexicographically.
+                    // If they are not BigInt (or numeric in general) we compare them as String.
+
+                    LOGGER.error("We are comparing: " + stringStringLinkedHashMap.get(keySet)
+                    +" to "+t1.get(keySet));
+                    try{
+                        int compareTo= new BigInteger(stringStringLinkedHashMap.get(keySet)).compareTo(new BigInteger(t1.get(keySet)));
+                        LOGGER.error("And the result is: "+compareTo);
+                        if (compareTo!=0)
+                            // NOTE: We put the minus to indicate we want it
+                            // maxed out as BigInteger. By default it is
+                            // returning the first as the lowest value. With the
+                            // minus it returns the max.
+                            return -compareTo;
+                    }catch (NumberFormatException e){
+                        LOGGER.error("Format exception, not numbers, comparing as string");
+                        int compareTo= stringStringLinkedHashMap.get(keySet).compareTo(t1.get(keySet));
+                        LOGGER.error("And the result is: "+compareTo);
+                        if (compareTo!=0)
+                            // As string we do not touch anything
+                            // as it is lexigraphically and that messes up a bit
+                            // everything.
+                            // TODO: ELIMINATE EVERYTHING ABOUT TRUE STRINGS?
+                            return compareTo;
+                    }
+                }
+            }
+            return 0;
+        });
 
         // Printing the ordered list
-        for (TreeMap<String, String> tuples : tuple) {
+        for (LinkedHashMap<String, String> tuples : tuple) {
             LOGGER.error("This is the list: "+tuples.toString());
             tuples.keySet().forEach(z -> LOGGER.error("FINAL ORDER APPLIED TO A " + z.toString() + "/"
                     + "FINAL ORDER APPLIED TO B "+ tuples.get(z).toString()));
@@ -94,9 +142,9 @@ public class Main {
      * @return reverse ordered partition
      */
     private static String maxPartitionSpec(Dataset ds){
-        ArrayList<TreeMap<String, String>> tuple = getPartitionSpecOrdered(ds);
+        ArrayList<LinkedHashMap<String, String>> tuple = getPartitionSpecOrdered(ds);
 
-        TreeMap<String, String> listToFilter= tuple.get(0);
+        LinkedHashMap<String, String> listToFilter= tuple.get(0);
 
         String ret="";
 

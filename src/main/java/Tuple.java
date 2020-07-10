@@ -1,5 +1,4 @@
 import java.io.Serializable;
-import java.util.Comparator;
 
 public class Tuple<A, B> implements Serializable, Comparable {
 
@@ -30,10 +29,10 @@ public class Tuple<A, B> implements Serializable, Comparable {
 
     @Override
     /**
-     * Made for string comparison, focused on
+     * Made for every comparable so we can use order
+     * or reverse order when filtering
      */
     public int compareTo(Object o) {
-        Comparable comparable = (Comparable) o;
         int res = this.a.compareTo( ((Tuple<?,?>) o).a);
 
         if(res==0){
